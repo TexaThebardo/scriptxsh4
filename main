@@ -8,6 +8,7 @@ local tweenservice = game:GetService("TweenService")
 local marketplaceservice = game:GetService("MarketplaceService")
 local textservice = game:GetService("TextService")
 local coregui = game:GetService("CoreGui")
+
 local player = players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = game.Workspace.CurrentCamera
@@ -19,8 +20,8 @@ library.theme = {
     backgroundcolor = Color3.fromRGB(20, 20, 20),
     tabstextcolor = Color3.fromRGB(230, 230, 230),
     bordercolor = Color3.fromRGB(60, 60, 60),
-    accentcolor = Color3.fromRGB(170, 0, 0),
-    accentcolor2 = Color3.fromRGB(130, 0, 0),
+    accentcolor = Color3.fromRGB(170, 0, 0),      -- ← Rojo principal
+    accentcolor2 = Color3.fromRGB(130, 0, 0),     -- ← Rojo más oscuro para degradados
     outlinecolor = Color3.fromRGB(60, 60, 60),
     outlinecolor2 = Color3.fromRGB(0, 0, 0),
     sectorcolor = Color3.fromRGB(30, 30, 30),
@@ -33,78 +34,6 @@ library.theme = {
     itemscolor = Color3.fromRGB(200, 200, 200)
 }
 
--- ==================================================
--- BOTÓN TOGGLE CIRCULAR ROJO (abre/cierra toda la UI)
--- ==================================================
-local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = "LibraryToggleButton"
-ToggleGui.ResetOnSpawn = false
-ToggleGui.Parent = coregui
-if syn then syn.protect_gui(ToggleGui) end
-
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.fromOffset(56, 56)
-ToggleBtn.Position = UDim2.new(1, -80, 1, -80)
-ToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-ToggleBtn.AutoButtonColor = false
-ToggleBtn.Text = ""
-ToggleBtn.ZIndex = 9999
-ToggleBtn.Parent = ToggleGui
-
-local Corner = Instance.new("UICorner", ToggleBtn)
-Corner.CornerRadius = UDim.new(1, 0)
-
-local Stroke = Instance.new("UIStroke", ToggleBtn)
-Stroke.Thickness = 3.5
-Stroke.Color = Color3.fromRGB(70, 70, 70) -- Gris cuando está cerrada
-
-local Icon = Instance.new("ImageLabel", ToggleBtn)
-Icon.Size = UDim2.fromOffset(32, 32)
-Icon.Position = UDim2.fromScale(0.5, 0.5)
-Icon.AnchorPoint = Vector2.new(0.5, 0.5)
-Icon.BackgroundTransparency = 1
-Icon.Image = "rbxassetid://6031097225" -- Flecha (puedes cambiarla)
-Icon.ImageColor3 = library.theme.accentcolor
-Icon.Rotation = 180 -- Empieza girada porque la UI está cerrada
-
--- Hover
-ToggleBtn.MouseEnter:Connect(function()
-    tweenservice:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40,40,40)}):Play()
-    tweenservice:Create(Stroke, TweenInfo.new(0.2), {Thickness = 5}):Play()
-end)
-ToggleBtn.MouseLeave:Connect(function()
-    tweenservice:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25,25,25)}):Play()
-    tweenservice:Create(Stroke, TweenInfo.new(0.2), {Thickness = 3.5}):Play()
-end)
-
--- Estado y función toggle
-library.Windows = {}
-local UI_Open = false
-
-library.ToggleUI = function(state)
-    UI_Open = state
-    for _, win in pairs(library.Windows) do
-        if win.Frame then win.Frame.Visible = state end
-    end
-    tweenservice:Create(Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Rotation = state and 0 or 180}):Play()
-    Stroke.Color = state and library.theme.accentcolor or Color3.fromRGB(70,70,70)
-end
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    library.ToggleUI(not UI_Open)
-end)
-
--- También con RightShift
-uis.InputBegan:Connect(function(inp)
-    if inp.KeyCode == Enum.KeyCode.RightShift then
-        library.ToggleUI(not UI_Open)
-    end
-end)
-
--- ==================================================
--- WATERMARK (sin cambios)
--- ==================================================
 function library:CreateWatermark(name)
 	local watermark = { }
 	watermark.Visible = true
@@ -214,57 +143,24 @@ function library:CreateWatermark(name)
 		end
 	end)
 
--- ==================================================
--- CREATEWINDOW MODIFICADO
--- ==================================================
-function library:CreateWindow(name, size, hidebutton)
-    local window = { }
-    window.name = name or ""
-    window.size = UDim2.fromOffset(size.X, size.Y) or UDim2.fromOffset(492, 598)
-    window.hidebutton = hidebutton or Enum.KeyCode.RightShift
-    window.theme = library.theme
-    window.Main = Instance.new("ScreenGui", coregui)
-    window.Main.Name = name
-    if syn then syn.protect_gui(window.Main) end
-    if getgenv().uilib then getgenv().uilib:Remove() end
-    getgenv().uilib = window.Main
+	watermark.mainbar.MouseEnter:Connect(function()
+		tweenservice:Create(watermark.mainbar, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 1, Active = false }):Play()
+		tweenservice:Create(watermark.topbar, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 1, Active = false }):Play()
+		tweenservice:Create(watermark.label, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { TextTransparency = 1, Active = false }):Play()
+		tweenservice:Create(watermark.Outline, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 1, Active = false }):Play()
+		tweenservice:Create(watermark.BlackOutline, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 1, Active = false }):Play()
+	end)
 
-    local dragging, dragInput, dragStart, startPos
+	watermark.mainbar.MouseLeave:Connect(function()
+		tweenservice:Create(watermark.mainbar, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 0, Active = true }):Play()
+		tweenservice:Create(watermark.topbar, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 0, Active = true }):Play()
+		tweenservice:Create(watermark.label, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { TextTransparency = 0, Active = true }):Play()
+		tweenservice:Create(watermark.Outline, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 0, Active = true }):Play()
+		tweenservice:Create(watermark.BlackOutline, TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In), { BackgroundTransparency = 0, Active = true }):Play()
+	end)
 
-    uis.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            window.Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    local dragstart = function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = window.Frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end
-
-    local dragend = function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end
-
-    window.Frame = Instance.new("TextButton", window.Main)
-    window.Frame.Name = "main"
-    window.Frame.Position = UDim2.fromScale(0.5, 0.5)
-    window.Frame.BorderSizePixel = 0
-    window.Frame.Size = window.size
-    window.Frame.Text = ""
-    window.Frame.AutoButtonColor = false
-    window.Frame.BackgroundColor3 = window.theme.backgroundcolor
-    window.Frame.AnchorPoint = Vector2.new(0.5, 0.5)
-    window.Frame.Visible = false -- ← Empieza cerrada
+	return watermark
+end
 
 function library:CreateWindow(name, size, hidebutton)
 	local window = { }
@@ -1863,21 +1759,11 @@ function library:CreateWindow(name, size, hidebutton)
 			return sector
 		end
 
-    table.insert(library.Windows, window)
+		table.insert(window.Tabs, tab)
+		return tab
+	end
 
-    -- Si es la primera ventana, aseguramos estado cerrado
-    if #library.Windows == 1 then
-        library.ToggleUI(false)
-    end
-
-    return window
+	return window
 end
-
--- ==================================================
--- PEGA AQUÍ EL RESTO DE TU LIBRARY ORIGINAL
--- (todas las funciones de tabs, sectors, buttons, toggles, etc.)
--- ==================================================
-
--- ... [PEGA TODO TU CÓDIGO DE TABS, SECTORS, BUTTONS, TOGGLES, ETC. TAL CUAL LO TENÍAS] ...
 
 return library
